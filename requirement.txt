@@ -5,3 +5,4 @@ tensorboard
 tensorboardx
 numpy==1.18.1
 fairseq
+librosa
