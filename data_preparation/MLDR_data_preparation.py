@@ -29,6 +29,12 @@ def pathTarget2Clean(path):
 
     return clean_path,file_id
 
+# https://tutorials.pytorch.kr/beginner/audio_preprocessing_tutorial.html 
+def normalize(tensor):
+    tensor_minus_mean = tensor - tensor.mean()
+    return tensor_minus_mean / tensor_minus_mean.abs().max()
+
+
 def genPickle(target_path,save_path,win_len):
     if not os.path.exists(save_path):
         os.makedirs(save_path)
@@ -38,8 +44,11 @@ def genPickle(target_path,save_path,win_len):
     window=torch.hann_window(window_length=win_len, periodic=True, dtype=None, layout=torch.strided, device=None, requires_grad=False)
 
     tgt_wav,_ = torchaudio.load(clean_path)
-
     noi_wav,_ = torchaudio.load(target_path)
+
+    # normalize
+    tgt_wav = normalize(tgt_wav)
+    noi_wav = normalize(noi_wav)
 
     tgt_wav_len = tgt_wav.shape[1]
 
