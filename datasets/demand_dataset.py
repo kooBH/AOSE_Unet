@@ -15,8 +15,6 @@ import time
 
 class AV_Lrs2_pickleDataset(Dataset):
 
-
-
     def __init__(self,data_path_list,frame_num,fs):
 
         self.data_paths = data_path_list
@@ -71,10 +69,6 @@ class AV_Lrs2_pickleDataset(Dataset):
             data["audio_wav"][0] = data["audio_wav"][0][:,k*256*self.fs:k*256*self.fs+frame_num*256*self.fs-1]
             data["audio_wav"][1] = data["audio_wav"][1][:,k*256*self.fs:k*256*self.fs+frame_num*256*self.fs-1]
             
-            
-        
-        
-        
         return data
         
     
