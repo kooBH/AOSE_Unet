@@ -1,32 +1,27 @@
 import os
+import glob
 import numpy as np
 from fairseq.data import FairseqDataset
 import sys
 import random
 import math
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 import torchaudio
 from torch.utils.data import Dataset
-from torch.utils.data import DataLoader
 import pickle
-import time
 
-class AV_Lrs2_pickleDataset(Dataset):
+class pickleDataset(Dataset):
 
-    def __init__(self,data_path_list,frame_num,fs):
-
-        self.data_paths = data_path_list
-        self.frame_num = frame_num
-        self.fs = int(fs)
+    def __init__(self,data_path_list,hp):
+        self.data_list= [x for x in glob.glob(os.path.join(data_path, '**'), recursive=True) if not os.path.isdir(x)]     
+        self.frame_num = hp.train.frame_num
+        self.fs = hp.train.fs
                 
     def __getitem__(self, index):
-        data_item = self.data_paths[index]
+        data_item = self.data_list[index]
     
         with open(data_item, 'rb') as f:
             data = pickle.load(f)
-        
        
         tgt_wav_len = data["tgt_wav_len"]
          
@@ -68,12 +63,9 @@ class AV_Lrs2_pickleDataset(Dataset):
             data["audio_data_Imagine"][1] = data["audio_data_Imagine"][1][:,k:k+frame_num]
             data["audio_wav"][0] = data["audio_wav"][0][:,k*256*self.fs:k*256*self.fs+frame_num*256*self.fs-1]
             data["audio_wav"][1] = data["audio_wav"][1][:,k*256*self.fs:k*256*self.fs+frame_num*256*self.fs-1]
-            
         return data
-        
-    
 
     def __len__(self):
-        return len(self.data_paths)
+        return len(self.data_list)
     
 
