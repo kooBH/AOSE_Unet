@@ -12,10 +12,10 @@ import pickle
 
 class pickleDataset(Dataset):
 
-    def __init__(self,data_path_list,hp):
+    def __init__(self,data_path,hp):
         self.data_list= [x for x in glob.glob(os.path.join(data_path, '**'), recursive=True) if not os.path.isdir(x)]     
         self.frame_num = hp.train.frame_num
-        self.fs = hp.train.fs
+        self.fs = int(hp.train.fs/16)
                 
     def __getitem__(self, index):
         data_item = self.data_list[index]
@@ -29,7 +29,7 @@ class pickleDataset(Dataset):
         time_len = data["audio_data_Real"][0].shape[1]
         wav_len = data["audio_wav"][0].shape[1]
         
-        
+        # Not en
         if data["audio_data_Real"][0].shape[1]-frame_num <= 0 :
             empty_in_r = torch.zeros(data["audio_data_Real"][0].shape[0],frame_num)
             empty_in_r[:,:time_len]=data["audio_data_Real"][0]
@@ -54,6 +54,8 @@ class pickleDataset(Dataset):
             data["audio_wav"][1] = empty_tgt_wav
             
             empty_tgt_wav = torch.zeros(data["audio_data_Real"][0].shape[0],frame_num)
+       
+        # random sampling
         else :
             k = np.random.randint(low=0, high = data["audio_data_Real"][0].shape[1]-frame_num)
             data["audio_data_Real"][0] = data["audio_data_Real"][0][:,k:k+frame_num]
@@ -63,6 +65,7 @@ class pickleDataset(Dataset):
             data["audio_data_Imagine"][1] = data["audio_data_Imagine"][1][:,k:k+frame_num]
             data["audio_wav"][0] = data["audio_wav"][0][:,k*256*self.fs:k*256*self.fs+frame_num*256*self.fs-1]
             data["audio_wav"][1] = data["audio_wav"][1][:,k*256*self.fs:k*256*self.fs+frame_num*256*self.fs-1]
+
         return data
 
     def __len__(self):

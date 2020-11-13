@@ -2,47 +2,39 @@ import torch
 import argparse
 import torchaudio
 import os
+import numpy as np
+
 from fairseq import utils
 from model.DCUnet_jsdr_demand import UNet
 from tensorboardX import SummaryWriter
-from datasets.demand_dataset import pickleDataset
+from datasets.pickleDataset import pickleDataset
 
 from utils.hparams import HParam
 from utils.wSDRLoss import wSDRLoss
+from utils.writer import MyWriter
 
 def complex_demand_audio(complex_ri, window, length, fs):
     complex_ri = complex_ri
-    audio = torchaudio.functional.istft(stft_matrix = complex_ri, n_fft=int(1024*fs), hop_length=int(256*fs), win_length=int(1024*fs), window=window, center=True, pad_mode='reflect', normalized=False, onesided=True, length=length)
+    audio = torchaudio.functional.istft(stft_matrix = complex_ri, n_fft=int(1024 * fs), hop_length=int(256*fs), win_length=int(1024*fs), window=window, center=True, pad_mode='reflect', normalized=False, onesided=True, length=length)
     
     return audio
 
-def search(d_name,li):
-    for (paths, dirs, files) in os.walk(d_name):
-        for filename in files:
-            ext = os.path.splitext(filename)[-1]
-            if ext == '.pkl':
-                li.append(os.path.join(os.path.join(os.path.abspath(d_name),paths), filename))
-    len_li = len(li)            
-    return li
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--modelsave_path', type=str, required=True)
-    parser.add_argument('-c', '--config', type=str, required=True,
+    parser.add_argument('--modelsave_path', '-m', type=str, required=True)
+    parser.add_argument('--config', '-c', type=str, required=True,
                         help="yaml for configuration")
     args = parser.parse_args()
 
     hp = HParam(args.config)
 
-    torch.cuda.set_device(hp.gpu)
     device = hp.gpu
+    torch.cuda.set_device(device)
 
-    exp_day = hp.train.exp_day
     SNR = hp.train.SNR
     batch_size = hp.train.batch_size
     frame_num = hp.train.frame_num
-    fs = hp.train.fs/16
+    fs = int(hp.train.fs/16)
     num_epochs = hp.train.epoch
     num_workers = hp.train.num_workers
 
@@ -59,8 +51,12 @@ if __name__ == '__main__':
     train_path = hp.data.pkl + 'train/'
     test_path = hp.data.pkl + 'test/'
 
-    train_dataset = pickleDataset(train_path, frame_num, fs)
-    val_dataset = pickleDataset(test_path, frame_num, fs)
+    log_dir = hp.log.root
+
+    writer = MyWriter(hp, log_dir)
+
+    train_dataset = pickleDataset(train_path,hp)
+    val_dataset = pickleDataset(test_path, hp)
 
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset,batch_size=batch_size,shuffle=True,num_workers=num_workers)
     val_loader = torch.utils.data.DataLoader(dataset=val_dataset,batch_size=batch_size,shuffle=False,num_workers=num_workers)
@@ -75,11 +71,15 @@ if __name__ == '__main__':
             patience=hp.scheduler.Plateau.patience,
             min_lr=hp.scheduler.Plateau.min_lr)
 
+    step = 0
+
     for epoch in range(num_epochs):
         model.train()
         train_loss=0
         for i, (batch_data) in enumerate(train_loader):
-            
+
+            step +=1
+
             audio_real = batch_data["audio_data_Real"][0].to(device)
             audio_imagine = batch_data["audio_data_Imagine"][0].to(device)
             target_audio = batch_data["audio_wav"][1].squeeze(1).to(device)
@@ -91,13 +91,17 @@ if __name__ == '__main__':
             enhance_spec = torch.cat((enhance_r,enhance_i),3)
             audio_me_pe = complex_demand_audio(enhance_spec,window,audio_maxlen,fs)
 
+            #print(audio_me_pe.shape)
+
             loss = criterion(input_audio,target_audio,audio_me_pe,eps=1e-8).to(device)
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
-            print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}'.format(epoch+1, num_epochs, i+1, len(train_loader), loss.item()))
+            print('TRAIN::Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}'.format(epoch+1, num_epochs, i+1, len(train_loader), loss.item()))
             train_loss+=loss.item()
 
+            if step %  hp.train.summary_interval == 0:
+                writer.log_training(loss,step)
 
         train_loss = train_loss/len(train_loader)
         torch.save(model.state_dict(), str(modelsave_path)+'/lastmodel.pth')
@@ -119,11 +123,22 @@ if __name__ == '__main__':
                 audio_me_pe = complex_demand_audio(enhance_spec,window,audio_maxlen,fs).to(device)
                 
                 loss = criterion(input_audio,target_audio,audio_me_pe,eps=1e-8).to(device)
-        #        print('valEpoch [{}/{}], Step [{}/{}], Loss: {:.4f}'.format(epoch+1, num_epochs, j+1, len(val_loader), loss.item()))
+                print('TEST::Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}'.format(epoch+1, num_epochs, j+1, len(val_loader), loss.item()))
                 val_loss +=loss.item()
+
             val_loss = val_loss/len(val_loader)
             scheduler.step(val_loss)
+
+            input_audio = input_audio[0].cpu().numpy()
+            target_audio= target_audio[0].cpu().numpy()
+            audio_me_pe= audio_me_pe[0].cpu().numpy()
+
+            writer.log_evaluation(val_loss,
+                                  input_audio,target_audio,audio_me_pe,
+                                  #input_spec, target_spec,enhance_spec,
+                                  step)
+
             if best_loss > val_loss:
-                torch.save(model.state_dict(), str(modelsave_path)+'/bestmodel.pth')
+                torch.save(model.state_dict(), str(modelsave_path)+'/bestmodel.pt')
                 best_loss = val_loss
                

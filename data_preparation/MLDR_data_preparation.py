@@ -29,12 +29,6 @@ def pathTarget2Clean(path):
 
     return clean_path,file_id
 
-# https://tutorials.pytorch.kr/beginner/audio_preprocessing_tutorial.html 
-def normalize(tensor):
-    tensor_minus_mean = tensor - tensor.mean()
-    return tensor_minus_mean / tensor_minus_mean.abs().max()
-
-
 def genPickle(target_path,save_path,win_len):
     if not os.path.exists(save_path):
         os.makedirs(save_path)
@@ -46,14 +40,14 @@ def genPickle(target_path,save_path,win_len):
     tgt_wav,_ = torchaudio.load(clean_path)
     noi_wav,_ = torchaudio.load(target_path)
 
-    # normalize
-    tgt_wav = normalize(tgt_wav)
-    noi_wav = normalize(noi_wav)
-
     tgt_wav_len = tgt_wav.shape[1]
 
-    spec_tgt = torchaudio.functional.spectrogram(waveform=tgt_wav, pad=0, window=window, n_fft=win_len, hop_length=int(win_len/4), win_length=win_len, power=None, normalized=False)
-    spec_noi = torchaudio.functional.spectrogram(waveform=noi_wav, pad=0, window=window, n_fft=win_len, hop_length=int(win_len/4), win_length=win_len, power=None, normalized=False)
+    if tgt_wav_len  < win_len:
+        print(str(tgt_wav_len) + " < " + str(win_len))
+        return
+
+    spec_tgt = torchaudio.functional.spectrogram(waveform=tgt_wav, pad=0, window=window, n_fft=win_len, hop_length=int(win_len/4), win_length=win_len, power=None, normalized=True)
+    spec_noi = torchaudio.functional.spectrogram(waveform=noi_wav, pad=0, window=window, n_fft=win_len, hop_length=int(win_len/4), win_length=win_len, power=None, normalized=True)
     tgt_wav_real = spec_tgt[0,:,:,0]
     tgt_wav_imag = spec_tgt[0,:,:,1]
     input_wav_real = spec_noi[0,:,:,0]
@@ -94,9 +88,4 @@ if __name__ == '__main__':
         genPickle(target_train, train_save_path, win_len)
     for target_test in tqdm(test_list,ascii=True,desc="test"):
         genPickle(target_test, test_save_path, win_len)
-
-        
-
-    
-    
 
