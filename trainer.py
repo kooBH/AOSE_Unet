@@ -24,9 +24,13 @@ if __name__ == '__main__':
     parser.add_argument('--modelsave_path', '-m', type=str, required=True)
     parser.add_argument('--config', '-c', type=str, required=True,
                         help="yaml for configuration")
+    parser.add_argument('--version_name', '-v', type=str, required=True,
+                        help="version of current training")
+    parser.add_argument('--chkpt',type=str,required=False,default=None)
     args = parser.parse_args()
 
     hp = HParam(args.config)
+    print("NOTE::Loading configuration : "+args.config)
 
     device = hp.gpu
     torch.cuda.set_device(device)
@@ -43,7 +47,7 @@ if __name__ == '__main__':
                                dtype=None, layout=torch.strided, device=None,
                                requires_grad=False).to(device)
     best_loss = 10
-    modelsave_path = args.modelsave_path
+    modelsave_path = args.modelsave_path +'/'+ args.version_name
 
     if not os.path.exists(modelsave_path):
         os.makedirs(modelsave_path)
@@ -51,7 +55,10 @@ if __name__ == '__main__':
     train_path = hp.data.pkl + 'train/'
     test_path = hp.data.pkl + 'test/'
 
-    log_dir = hp.log.root
+    log_dir = hp.log.root+args.version_name
+
+    if not os.path.exists(log_dir):
+        os.makedirs(log_dir)
 
     writer = MyWriter(hp, log_dir)
 
@@ -62,14 +69,25 @@ if __name__ == '__main__':
     val_loader = torch.utils.data.DataLoader(dataset=val_dataset,batch_size=batch_size,shuffle=False,num_workers=num_workers)
 
     model = UNet().to(device)
+    if not args.chkpt == None : 
+        print('NOTE::Loading pre-trained model : '+ args.chkpt)
+        model.load_state_dict(torch.load(args.chkpt, map_location=device))
 
     criterion = wSDRLoss
     optimizer = torch.optim.Adam(model.parameters(), lr=hp.train.adam)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,
+
+    if hp.scheduler.type == 'Plateau': 
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,
             mode=hp.scheduler.Plateau.mode,
             factor=hp.scheduler.Plateau.factor,
             patience=hp.scheduler.Plateau.patience,
             min_lr=hp.scheduler.Plateau.min_lr)
+    elif hp.scheduler.type == 'oneCycle':
+        scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer,
+                max_lr = hp.scheduler.oneCycle.max_lr,
+                epochs=hp.train.epoch,
+                steps_per_epoch = len(train_loader)
+                )
 
     step = 0
 

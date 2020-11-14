@@ -59,7 +59,7 @@ def my_collate(batch):
     
     return (data_name,data_wav_len, re_fs,data_wav,input_wav_real, input_wav_imag)
   
-class AV_Lrs2_pickleDataset(Dataset):
+class testDataset(Dataset):
 
 
 
@@ -122,29 +122,6 @@ class AV_Lrs2_pickleDataset(Dataset):
 
     def __len__(self):
         return len(self.wav_list)
-    
-
-
-
-
-
-if __name__ == '__main__':
-    data_path = "/home/nas/user/jungwook/fairseq/examples/audio_visual_speech_enhancement/Magnitude_subnetwork/demand_test_sort_noise_0db_num1.txt"
-    train_dataset = AV_Lrs2_pickleDataset(data_path)
-    train_loader = torch.utils.data.DataLoader(dataset=train_dataset,batch_size=1,shuffle=True,pin_memory = True, num_workers=8)
-    for i, (batch_data) in enumerate(train_loader):
-        audio = batch_data["tgt_wav_len"]
-        print(batch_data)
-        
-        
-        
-    
-        
-
-    
-
-
-
 
 
 

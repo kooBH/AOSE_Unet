@@ -25,7 +25,7 @@ loss:
 scheduler: # Plateau, oneCycle, None
   type: 'Plateau'
   oneCycle:
-    max_lr: 0.0001
+    max_lr: 0.001
   Plateau:
     mode: 'min'
     patience: 2

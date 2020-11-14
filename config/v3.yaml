@@ -1,7 +1,7 @@
-gpu: 'cuda:1'
+gpu: 'cuda:0'
 ---
 train:
-  epoch: 300
+  epoch: 100
   batch_size: 12
   num_workers: 16
   optimizer: 'adam'
@@ -23,7 +23,7 @@ loss:
   type: 'wSDR'
 ---
 scheduler: # Plateau, oneCycle, None
-  type: 'Plateau'
+  type: 'oneCycle'
   oneCycle:
     max_lr: 0.0001
   Plateau:
