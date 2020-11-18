@@ -5,6 +5,7 @@ __pycache__
 *.swp
 
 # data folder
-output_16/
+output*
 sample_16/
 
+# output folder
