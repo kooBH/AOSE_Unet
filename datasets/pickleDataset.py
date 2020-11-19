@@ -12,8 +12,8 @@ import pickle
 
 class pickleDataset(Dataset):
 
-    def __init__(self,data_path,hp):
-        self.data_list= [x for x in glob.glob(os.path.join(data_path, '**'), recursive=True) if not os.path.isdir(x)]     
+    def __init__(self,data_path,target,hp):
+        self.data_list= [x for x in glob.glob(os.path.join(data_path,target+'*' ,'**'), recursive=True) if not os.path.isdir(x)]     
         self.frame_num = hp.train.frame_num
         self.fs = int(hp.train.fs/16)
                 

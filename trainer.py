@@ -52,8 +52,7 @@ if __name__ == '__main__':
     if not os.path.exists(modelsave_path):
         os.makedirs(modelsave_path)
 
-    train_path = hp.data.pkl + 'train/'
-    test_path = hp.data.pkl + 'test/'
+    pickle_path = hp.data.pkl
 
     log_dir = hp.log.root+args.version_name
 
@@ -62,8 +61,8 @@ if __name__ == '__main__':
 
     writer = MyWriter(hp, log_dir)
 
-    train_dataset = pickleDataset(train_path,hp)
-    val_dataset = pickleDataset(test_path, hp)
+    train_dataset = pickleDataset(pickle_path,'train',hp)
+    val_dataset = pickleDataset(pickle_path,'test', hp)
 
     train_loader = torch.utils.data.DataLoader(dataset=train_dataset,batch_size=batch_size,shuffle=True,num_workers=num_workers)
     val_loader = torch.utils.data.DataLoader(dataset=val_dataset,batch_size=batch_size,shuffle=False,num_workers=num_workers)
