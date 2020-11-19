@@ -34,9 +34,7 @@ scheduler: # Plateau, oneCycle, None
 ---
 data:
   test_train_ratio: 0.2
-  root: '/home/nas/user/kbh/Chime_MLDR/'
-  wav : '/home/nas/user/kbh/Chime_MLDR/wav/'
-  pkl : '/home/nas/user/kbh/Chime_MLDR/pkl/'
+  pkl : '/home/nas/user/kbh/DCUNet/CHiME4/'
 ---
   log:
     root: '/home/nas/user/kbh/DCUNet/logs/'

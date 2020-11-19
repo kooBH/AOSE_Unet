@@ -42,7 +42,7 @@ def find_nearest(array,value):
 
 def my_collate(batch):
     
-    data_name,data_wav_len, re_fs,data_wav,input_wav_real, input_wav_imag = list(zip(*batch))
+    data_dir,data_name,data_wav_len, re_fs,data_wav,input_wav_real, input_wav_imag = list(zip(*batch))
     #print(data_wav_len)
     #maxlen = max([len(x) for x in data])
     #zero_arr = np.zeros([B, maxlen])
@@ -57,14 +57,15 @@ def my_collate(batch):
     input_wav_real = torch.FloatTensor(input_wav_real)
     input_wav_imag = torch.FloatTensor(input_wav_imag)
     
-    return (data_name,data_wav_len, re_fs,data_wav,input_wav_real, input_wav_imag)
+    return (data_dir,data_name,data_wav_len, re_fs,data_wav,input_wav_real, input_wav_imag)
   
 class testDataset(Dataset):
 
 
 
-    def __init__(self,data_test_list,re_fs,orig_fs):
+    def __init__(self,data_root_dir,data_test_list,re_fs,orig_fs):
 
+        self.data_root_dir = data_root_dir
         self.wav_list = data_test_list
         self.fs = re_fs
         self.orig_fs = orig_fs
@@ -73,6 +74,9 @@ class testDataset(Dataset):
         target_fs =[1,2,3] #16,32,48
         data_item = self.wav_list[index] if self.wav_list is not None else None
         data_name = os.path.splitext(os.path.split(data_item)[1])[0]
+        data_dir = os.path.dirname(data_item)
+        data_dir = data_dir.split(self.data_root_dir)[1]
+
         win_len = int(1024*(self.fs))
         hop_len = int(win_len/4)
         if self.orig_fs !=1 and self.orig_fs!=2 and self.orig_fs!=3:
@@ -116,7 +120,7 @@ class testDataset(Dataset):
             input_wav_real = input_wav_real[:,:1024] 
             input_wav_imag =  input_wav_imag[:,:1024] 
         
-        return (data_name,data_wav_len,re_fs,data_wav,input_wav_real,input_wav_imag)
+        return (data_dir,data_name,data_wav_len,re_fs,data_wav,input_wav_real,input_wav_imag)
         
     
 

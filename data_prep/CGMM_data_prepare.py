@@ -17,7 +17,9 @@ from SyncWav import sync_wav
 from multiprocessing import Pool, cpu_count
 
 clean_root = '/home/nas/DB/CHiME4/data/audio/16kHz/isolated_ext/'
-noisy_root = '/home/nas/user/albert/2020_IITP_share/data/CGMM-RLS/trial_01/'
+clean_root = '/home/nas/DB/CHiME4/data/audio/16kHz/isolated_ext/'
+noisy_root_1 = '/home/nas/user/albert/2020_IITP_share/data/CGMM-RLS/trial_01/winL1024_gamma0.99_Ln5_MVDRon0/'
+noisy_root_2 = '/home/nas/user/albert/2020_IITP_share/data/CGMM-RLS/trial_01/winL1024_gamma0.99_Ln5_MVDRon1/'
 
 clean_dict = {}
 
@@ -85,8 +87,13 @@ if __name__ == '__main__':
 
     win_len = int(1024*(fs/16))
 
-    train_list = [x for x in glob.glob(os.path.join(noisy_root,'*','tr*simu','*.wav')) if not os.path.isdir(x)]
-    test_list= [x for x in glob.glob(os.path.join(noisy_root,'dt*simu','*.wav')) if not os.path.isdir(x)] + [x for x in glob.glob(os.path.join(noisy_root,'et*simu','*.wav')) if not os.path.isdir(x)]
+    train_list_1 = [x for x in glob.glob(os.path.join(noisy_root_1,'tr*simu','*.wav')) if not os.path.isdir(x)]
+    test_list_1= [x for x in glob.glob(os.path.join(noisy_root_1,'dt*simu','*.wav')) if not os.path.isdir(x)] + [x for x in glob.glob(os.path.join(noisy_root_1,'et*simu','*.wav')) if not os.path.isdir(x)]
+
+
+    train_list_2 = [x for x in glob.glob(os.path.join(noisy_root_2,'tr*simu','*.wav')) if not os.path.isdir(x)]
+    test_list_2 = [x for x in glob.glob(os.path.join(noisy_root_2,'dt*simu','*.wav')) if not os.path.isdir(x)] + [x for x in glob.glob(os.path.join(noisy_root_2,'et*simu','*.wav')) if not os.path.isdir(x)]
+
     clean_list =   [x for  x in glob.glob(os.path.join(clean_root,'*','*.CH1.Clean.wav')) if not os.path.isdir(x)]
 
     for t in clean_list : 
@@ -98,30 +105,55 @@ if __name__ == '__main__':
 
     window=torch.hann_window(window_length=win_len, periodic=True, dtype=None, layout=torch.strided, device=None, requires_grad=False)
     
-    train_save_path = hp.data.pkl + 'train/'
-    test_save_path  = hp.data.pkl + 'test/' 
+    train_save_path_1 = hp.data.pkl + 'train_1/'
+    test_save_path_1  = hp.data.pkl + 'test_1/' 
 
-    if not os.path.exists(train_save_path):
-        os.makedirs(train_save_path)
-    if not os.path.exists(test_save_path):
-        os.makedirs(test_save_path)
+    train_save_path_2 = hp.data.pkl + 'train_2/'
+    test_save_path_2  = hp.data.pkl + 'test_2/' 
+
+    if not os.path.exists(train_save_path_1):
+        os.makedirs(train_save_path_1)
+    if not os.path.exists(test_save_path_1):
+        os.makedirs(test_save_path_1)
+    if not os.path.exists(train_save_path_2):
+        os.makedirs(train_save_path_2)
+    if not os.path.exists(test_save_path_2):
+        os.makedirs(test_save_path_2)
 
 
     cpu_num = cpu_count()
 
-    def train_wrapper(num):
-        target = train_list[num]
-        genPickle(target,train_save_path,window,win_len)
+    def train_wrapper_1(num):
+        target = train_list_1[num]
+        genPickle(target,train_save_path_1,window,win_len)
 
-    def test_wrapper(num):
-        target = test_list[num]
-        genPickle(target,test_save_path,window,win_len)
+    def test_wrapper_1(num):
+        target = test_list_1[num]
+        genPickle(target,test_save_path_1,window,win_len)
 
-    arr = list(range(len(train_list)))
+    def train_wrapper_2(num):
+        target = train_list_2[num]
+        genPickle(target,train_save_path_2,window,win_len)
+
+    def test_wrapper_2(num):
+        target = test_list_2[num]
+        genPickle(target,test_save_path_2,window,win_len)
+
+
+    arr = list(range(len(train_list_1)))
     with Pool(cpu_num) as p:
-        r = list(tqdm(p.imap(train_wrapper, arr), total=len(arr),ascii=True,desc='TRAIN'))
+        r = list(tqdm(p.imap(train_wrapper_1, arr), total=len(arr),ascii=True,desc='TRAIN_1'))
 
-    arr = list(range(len(test_list)))
+    arr = list(range(len(test_list_1)))
     with Pool(cpu_num) as p:
-        r = list(tqdm(p.imap(test_wrapper, arr), total=len(arr),ascii=True,desc='TEST'))
+        r = list(tqdm(p.imap(test_wrapper_1, arr), total=len(arr),ascii=True,desc='TEST_1'))
+
+
+    arr = list(range(len(train_list_2)))
+    with Pool(cpu_num) as p:
+        r = list(tqdm(p.imap(train_wrapper_2, arr), total=len(arr),ascii=True,desc='TRAIN_2'))
+
+    arr = list(range(len(test_list_2)))
+    with Pool(cpu_num) as p:
+        r = list(tqdm(p.imap(test_wrapper_2, arr), total=len(arr),ascii=True,desc='TEST_2'))
 
