@@ -23,7 +23,7 @@ class pickleDataset(Dataset):
         with open(data_item, 'rb') as f:
             data = pickle.load(f)
        
-        tgt_wav_len = data["tgt_wav_len"]
+        tgt_wav_len = data["clean_wav_len"]
          
         frame_num = self.frame_num
         time_len = data["audio_data_Real"][0].shape[1]

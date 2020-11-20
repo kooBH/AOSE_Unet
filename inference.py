@@ -4,6 +4,7 @@ import numpy as np
 import torchaudio
 import os
 import sys
+import glob
 import math
 from fairseq import utils
 from DCUnet_jsdr_demand import *
@@ -11,6 +12,8 @@ import librosa
 from tensorboardX import SummaryWriter
 from datasets.testDataset import *
 import scipy.io.wavfile
+
+from tqdm import tqdm
 
 from utils.hparams import HParam
 
@@ -40,13 +43,17 @@ def find_nearest(array,value):
     
 def search(d_name,li):
     for (paths, dirs, files) in os.walk(d_name):
+        print('------------')
+        print(paths)
+        print(dirs)
+        print(files)
         for filename in files:
             ext = os.path.splitext(filename)[-1]
             if ext == '.wav':
                 li.append(os.path.join(os.path.abspath(d_name), filename))
     len_li = len(li)            
     return li
-    
+
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
@@ -77,23 +84,28 @@ if __name__ == '__main__':
     test_model = args.model
     num_epochs = 1
 
-    data_test = args.input_dir
-    data_test_list=[]
-    data_test_list=search(data_test,data_test_list)
+    #data_test = args.input_dir
+    #data_test_list=[]
+    #data_test_list=search(data_test,data_test_list)
 
-    print('data_test_list' + str(data_test_list))
+    data_test_list = [x for x in glob.glob(os.path.join(args.input_dir,'**'),recursive=True) if not os.path.isdir(x)]
+
+    #print('data_test_list' + str(data_test_list))
 
     output_dir = args.output_dir
-    test_dataset = testDataset(data_test_list,re_fs,orig_fs)
+
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    test_dataset = testDataset(args.input_dir,data_test_list,re_fs,orig_fs)
+
     test_loader = torch.utils.data.DataLoader(dataset=test_dataset,batch_size=batch_size, collate_fn=lambda x:my_collate(x),shuffle=False,num_workers=8)
     model_test = UNet().to(device)
     model_test.load_state_dict(torch.load(test_model,map_location=device))
     model_test.eval()
     
-    
     with torch.no_grad():
-        for i, (data_name,data_wav_len,re_fs,data_wav,input_wav_real,input_wav_imag) in enumerate(test_loader):
-            print(i)
+        for i, (data_dir,data_name,data_wav_len,re_fs,data_wav,input_wav_real,input_wav_imag) in enumerate(tqdm(test_loader)):
             audio_real = input_wav_real.to(device)
             audio_imagine = input_wav_imag.to(device)
             audio_maxlen = int(audio_real.shape[-1]*256*fs-1)
@@ -105,8 +117,6 @@ if __name__ == '__main__':
             audio_me_pe = complex_demand_audio(enhance_spec,window,audio_maxlen,re_fs)
             
        
-            if not os.path.exists(output_dir):
-                os.makedirs(output_dir)
             
             data_name = data_name[0]
             re_sr = re_fs
@@ -126,7 +136,10 @@ if __name__ == '__main__':
                 else:
                     audio_me_pe = audio_me_pe * (norm_data/abs(min_aud))
             
-            torchaudio.save(output_dir+"/"+data_name+".wav",src=audio_me_pe[:,:int(data_wav_len)], sample_rate=int(16000*re_sr))
+            data_dir = data_dir[0]
+            if not os.path.exists(output_dir +'/'+ data_dir):
+                os.makedirs(output_dir +'/'+ data_dir)
+            torchaudio.save(output_dir+"/"+data_dir+'/'+data_name+".wav",src=audio_me_pe[:,:int(data_wav_len)], sample_rate=int(16000*re_sr))
             
 
 
