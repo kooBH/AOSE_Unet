@@ -33,6 +33,11 @@ def complex_demand_audio(complex_ri,window,length,fs):
     #audio = audio.numpy().squeeze()
     return audio
 
+def cplx2mag(real,imag):
+    mag = torch.pow(real,2) + torch.pow(imag,2)
+    return mag
+
+
 def find_nearest(array,value):
     idx = np.searchsorted(array, value, side="left")
     if idx > 0 and (idx == len(array) or math.fabs(value - array[idx-1]) < math.fabs(value - array[idx])):
@@ -43,10 +48,6 @@ def find_nearest(array,value):
     
 def search(d_name,li):
     for (paths, dirs, files) in os.walk(d_name):
-        print('------------')
-        print(paths)
-        print(dirs)
-        print(files)
         for filename in files:
             ext = os.path.splitext(filename)[-1]
             if ext == '.wav':
@@ -84,7 +85,7 @@ if __name__ == '__main__':
     test_model = args.model
     num_epochs = 1
 
-    #data_test = args.input_dir
+    #data_tesnt = args.input_dir
     #data_test_list=[]
     #data_test_list=search(data_test,data_test_list)
 
@@ -110,14 +111,27 @@ if __name__ == '__main__':
             audio_imagine = input_wav_imag.to(device)
             audio_maxlen = int(audio_real.shape[-1]*256*fs-1)
             
-            enhance_r, enhance_i = model_test(audio_real,audio_imagine)
+            mask_r,mask_i = model_test(audio_real,audio_imagine)
+            if hp.train.type == 'R':
+                enhance_r = audio_real * mask_r
+                enhance_i = audio_imagine * mask_i
+            else :
+                enhance_r = audio_real * mask_r - audio_imagine * mask_i
+                enhance_i = audio_real * mask_i + audio_imagine * mask_r
+
+
+
             enhance_r = enhance_r.unsqueeze(3)
             enhance_i = enhance_i.unsqueeze(3)
-            enhance_spec = torch.cat((enhance_r,enhance_i),3)
-            audio_me_pe = complex_demand_audio(enhance_spec,window,audio_maxlen,re_fs)
-            
-       
-            
+
+            if hp.eval.type =='cplx' : 
+                enhance_spec = torch.cat((enhance_r,enhance_i),3)
+                audio_me_pe = complex_demand_audio(enhance_spec,window,audio_maxlen,re_fs)
+            # Use enhanced magnitude and original phase
+            else  : 
+                mask_mag = cplx2mag(mask_r, mask_i)
+                enhance_spec = torch.cat((enhance_r,audio_imagine),3)
+
             data_name = data_name[0]
             re_sr = re_fs
             audio_me_pe=audio_me_pe.to('cpu')
