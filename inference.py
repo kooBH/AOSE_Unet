@@ -29,17 +29,12 @@ def complex_demand_audio(complex_ri,window,length,fs):
     length = length
     complex_ri = complex_ri
     fs=fs
-    audio = torchaudio.functional.istft(stft_matrix = complex_ri, n_fft=int(1024*fs), hop_length=int(256*fs), win_length=int(1024*fs), window=window, center=True, pad_mode='reflect', normalized=False, onesided=True, length=length)
+    ## istft is now in torch
+    #audio = torchaudio.functional.istft(stft_matrix = complex_ri, n_fft=int(1024*fs), hop_length=int(256*fs), win_length=int(1024*fs), window=window, center=True, pad_mode='reflect', normalized=False, onesided=True, length=length)
+
+    audio = torch.istft(complex_ri, n_fft=int(1024*fs), hop_length=int(256*fs), win_length=int(1024*fs), window=window, center=True,  normalized=False, onesided=True, length=length)
     #audio = audio.numpy().squeeze()
     return audio
-
-def cplx2mag(real,imag):
-    mag = torch.pow(real,2) + torch.pow(imag,2)
-    return mag
-def cplx2phase(real,imag):
-    phase = 
-    return phase
-
 
 def find_nearest(array,value):
     idx = np.searchsorted(array, value, side="left")
@@ -134,14 +129,22 @@ if __name__ == '__main__':
             # Use enhanced magnitude and original phase
             else  : 
                 enhance_spec = torch.cat((enhance_r,enhance_i),3)
-                enhance_mag,enhance_phase = torchaudio.functional.magphase(enhnace_spec)
+
+                ## magphase()
+                # Separate a complex-valued spectrogram with shape (…, 2) into its magnitude and phase.
+                enhance_mag,enhance_phase = torchaudio.functional.magphase(enhance_spec)
+
+                audio_real = audio_real.unsqueeze(3)
+                audio_imagine = audio_imagine.unsqueeze(3)
 
                 original_spec = torch.cat((audio_real,audio_imagine),3)
+
                 original_mag,original_phase = torchaudio.functional.magphase(original_spec)
-
-
-
-                audio_me_pe = complex_demand_audio(enhance_spec,window,audio_maxlen,re_fs)
+                estimated_spec = original_mag * torch.exp(1j*original_phase)
+                
+                # torch.view_as_real : since pytorch 1.6
+                estimated_spec = torch.view_as_real(estimated_spec)
+                audio_me_pe = complex_demand_audio(estimated_spec,window,audio_maxlen,re_fs)
 
             data_name = data_name[0]
             re_sr = re_fs

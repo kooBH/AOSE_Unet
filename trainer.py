@@ -104,6 +104,7 @@ if __name__ == '__main__':
             input_audio = batch_data["audio_wav"][0].squeeze(1).to(device)
             
             mask_r, mask_i = model(audio_real, audio_imagine)
+
             # Respectively
             if hp.train.type =='R':
                 enhance_r = audio_real * mask_r
@@ -112,8 +113,6 @@ if __name__ == '__main__':
             else :
                 enhance_r = audio_real * mask_r - audio_imagine * mask_i
                 enhance_i = audio_real * mask_i + audio_imagine * mask_r
-
-
 
             enhance_r = enhance_r.unsqueeze(3)
             enhance_i = enhance_i.unsqueeze(3)
