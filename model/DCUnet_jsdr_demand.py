@@ -195,8 +195,8 @@ class UNet(nn.Module):
         mask = torch.tanh(mask)
         mask = torch.squeeze(mask,1)
         
-        #bd['M_hat'] = mask
-        return real_spec*mask[:,:,:,0], imag_spec*mask[:,:,:,1]
+        #return real_spec*mask[:,:,:,0], imag_spec*mask[:,:,:,1]
+        return mask[:,:,:,0], mask[:,:,:,1]
 
     def set_size(self, model_complexity, model_depth=20, input_channels=1):
         if model_depth == 10:

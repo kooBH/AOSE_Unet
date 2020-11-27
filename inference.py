@@ -7,7 +7,7 @@ import sys
 import glob
 import math
 from fairseq import utils
-from DCUnet_jsdr_demand import *
+from model.DCUnet_jsdr_demand import *
 import librosa
 from tensorboardX import SummaryWriter
 from datasets.testDataset import *
@@ -65,6 +65,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     hp = HParam(args.config)
+    print('Using configuration :: ' + args.config)
 
     device = hp.gpu
     torch.cuda.set_device(device)
@@ -82,6 +83,7 @@ if __name__ == '__main__':
         re_fs = fs
         win_len = 1024*fs
         window=torch.hann_window(window_length=int(win_len), periodic=True, dtype=None, layout=torch.strided, device=None, requires_grad=False).to(device)
+
     test_model = args.model
     num_epochs = 1
 
@@ -102,6 +104,7 @@ if __name__ == '__main__':
 
     test_loader = torch.utils.data.DataLoader(dataset=test_dataset,batch_size=batch_size, collate_fn=lambda x:my_collate(x),shuffle=False,num_workers=8)
     model_test = UNet().to(device)
+    print('Loading Model : ' + test_model)
     model_test.load_state_dict(torch.load(test_model,map_location=device))
     model_test.eval()
     
@@ -119,18 +122,24 @@ if __name__ == '__main__':
                 enhance_r = audio_real * mask_r - audio_imagine * mask_i
                 enhance_i = audio_real * mask_i + audio_imagine * mask_r
 
-
-
             enhance_r = enhance_r.unsqueeze(3)
             enhance_i = enhance_i.unsqueeze(3)
-
+            
             if hp.eval.type =='cplx' : 
                 enhance_spec = torch.cat((enhance_r,enhance_i),3)
                 audio_me_pe = complex_demand_audio(enhance_spec,window,audio_maxlen,re_fs)
             # Use enhanced magnitude and original phase
             else  : 
-                mask_mag = cplx2mag(mask_r, mask_i)
-                enhance_spec = torch.cat((enhance_r,audio_imagine),3)
+                enhance_spec = torch.cat((enhance_r,enhance_i),3)
+                enhance_mag,enhance_phase = torchaudio.functional.magphase(enhnace_spec)
+
+                original_spec = torch.cat((audio_real,audio_imagine),3)
+                original_mag,original_phase = torchaudio.functional.magphase(original_spec)
+
+
+
+                audio_me_pe = complex_demand_audio(enhance_spec,window,audio_maxlen,re_fs)
+
 
             data_name = data_name[0]
             re_sr = re_fs

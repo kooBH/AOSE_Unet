@@ -21,7 +21,7 @@ train:
   summary_interval: 10
   validation_interval: 100
   checkpoint_interval: 1000
-  type: 'R' # R,C
+  type: 'C' # R,C
 ---
 loss:
   type: 'wSDR'
@@ -38,9 +38,7 @@ scheduler: # Plateau, oneCycle, None
 ---
 data:
   test_train_ratio: 0.2
-  root: '/home/nas/user/kbh/Chime_MLDR/'
-  wav : '/home/nas/user/kbh/Chime_MLDR/wav/'
-  pkl : '/home/nas/user/DCUNet/CHiME4'
+  pkl : '/home/kbh/DB/CHiME4'
 ---
   log:
     root: '/home/nas/user/kbh/DCUNet/logs/'

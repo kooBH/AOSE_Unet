@@ -21,7 +21,7 @@ train:
   summary_interval: 10
   validation_interval: 100
   checkpoint_interval: 1000
-  type: 'R' # R,C
+  type: 'C' # R,C
 ---
 loss:
   type: 'wSDR'

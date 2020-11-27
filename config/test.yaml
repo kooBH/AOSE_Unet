@@ -1,7 +1,10 @@
 gpu: 'cuda:1'
 ---
+eval:
+  type: 'mag'  # cplx, mag
+---
 train:
-  epoch: 100
+  epoch: 50
   batch_size: 12
   num_workers: 16
   optimizer: 'adam'
@@ -18,6 +21,7 @@ train:
   summary_interval: 10
   validation_interval: 100
   checkpoint_interval: 1000
+  type: 'R' # R,C
 ---
 loss:
   type: 'wSDR'
@@ -36,7 +40,7 @@ data:
   test_train_ratio: 0.2
   root: '/home/nas/user/kbh/Chime_MLDR/'
   wav : '/home/nas/user/kbh/Chime_MLDR/wav/'
-  pkl : '/home/nas/user/kbh/Chime_MLDR/pkl/'
+  pkl : '/home/nas/user/DCUNet/CHiME4'
 ---
   log:
     root: '/home/nas/user/kbh/DCUNet/logs/'
