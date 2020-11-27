@@ -36,6 +36,9 @@ def complex_demand_audio(complex_ri,window,length,fs):
 def cplx2mag(real,imag):
     mag = torch.pow(real,2) + torch.pow(imag,2)
     return mag
+def cplx2phase(real,imag):
+    phase = 
+    return phase
 
 
 def find_nearest(array,value):
@@ -119,8 +122,6 @@ if __name__ == '__main__':
                 enhance_r = audio_real * mask_r - audio_imagine * mask_i
                 enhance_i = audio_real * mask_i + audio_imagine * mask_r
 
-
-
             enhance_r = enhance_r.unsqueeze(3)
             enhance_i = enhance_i.unsqueeze(3)
 
@@ -129,8 +130,11 @@ if __name__ == '__main__':
                 audio_me_pe = complex_demand_audio(enhance_spec,window,audio_maxlen,re_fs)
             # Use enhanced magnitude and original phase
             else  : 
-                mask_mag = cplx2mag(mask_r, mask_i)
-                enhance_spec = torch.cat((enhance_r,audio_imagine),3)
+                enhance_spec = torch.cat((enhance_r,enhance_i),3)
+                mag,phase = torchaudio.functional.magphase(enhance_spec)
+
+                estimated_spec
+                audio_me_pe = complex_demand_audio(estimated_spec,window,audio_maxlen,re_fs)
 
             data_name = data_name[0]
             re_sr = re_fs
