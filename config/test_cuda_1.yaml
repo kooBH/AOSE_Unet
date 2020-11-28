@@ -1,10 +1,7 @@
 gpu: 'cuda:1'
 ---
-eval:
-  type: 'mag' # cplx, mag
----
 train:
-  epoch: 100
+  epoch: 300
   batch_size: 12
   num_workers: 16
   optimizer: 'adam'
