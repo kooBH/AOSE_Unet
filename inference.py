@@ -140,7 +140,7 @@ if __name__ == '__main__':
                 original_spec = torch.cat((audio_real,audio_imagine),3)
 
                 original_mag,original_phase = torchaudio.functional.magphase(original_spec)
-                estimated_spec = original_mag * torch.exp(1j*original_phase)
+                estimated_spec = enhance_mag * torch.exp(1j*original_phase)
                 
                 # torch.view_as_real : since pytorch 1.6
                 estimated_spec = torch.view_as_real(estimated_spec)
